@@ -4,9 +4,24 @@ from svgpathtools import svg2paths2
 from lxml import etree
 
 MARGIN = 5
+DEFAULT_COLOR = "#ffffff"
 
-def process_svg(input_path, output_path, fill_color="#ffffff"):
-    # svgpathtools でパスと属性を取得
+# -----------------------------
+# XML でない（._xxx.svg など）を除外
+# -----------------------------
+def is_valid_svg(path):
+    try:
+        with open(path, "rb") as f:
+            head = f.read(100).lstrip()
+        return head.startswith(b"<")
+    except:
+        return False
+
+# -----------------------------
+# SVG 1ファイル処理
+# -----------------------------
+def process_svg(input_path, output_path, fill_color=DEFAULT_COLOR):
+    # svgpathtools でパス解析
     paths, attributes, svg_attr = svg2paths2(input_path)
 
     min_x = float("inf")
@@ -64,7 +79,9 @@ def process_svg(input_path, output_path, fill_color="#ffffff"):
 
     print(f"Processed: {input_path} → {output_path}")
 
-
+# -----------------------------
+# メイン処理（ディレクトリ一括）
+# -----------------------------
 if __name__ == "__main__":
     input_dir = sys.argv[1]
     output_dir = sys.argv[2]
@@ -72,7 +89,15 @@ if __name__ == "__main__":
 
     for root, dirs, files in os.walk(input_dir):
         for file in files:
-            if file.lower().endswith(".svg"):
-                inp = os.path.join(root, file)
-                out = os.path.join(output_dir, file)
-                process_svg(inp, out)
+            if not file.lower().endswith(".svg"):
+                continue
+
+            inp = os.path.join(root, file)
+
+            # XML でない（._xxx.svg など）はスキップ
+            if not is_valid_svg(inp):
+                print(f"Skip invalid SVG: {inp}")
+                continue
+
+            out = os.path.join(output_dir, file)
+            process_svg(inp, out)
