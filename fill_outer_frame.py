@@ -12,20 +12,31 @@ def process_svg(input_path, output_path, fill_color="#000000"):
     max_x = float("-inf")
     max_y = float("-inf")
 
-    for e in svg.elements():
+    found = False
+
+    for e in iter_all_elements(svg):
         try:
             bbox = e.bbox()
         except Exception:
             continue
+
         if bbox is None:
             continue
 
-        min_x = min(min_x, bbox.x)
-        min_y = min(min_y, bbox.y)
-        max_x = max(max_x, bbox.x + bbox.width)
-        max_y = max(max_y, bbox.y + bbox.height)
+        # svgelements 旧版: bbox is Rect
+        # svgelements 新版: bbox is tuple (x, y, width, height)
+        if isinstance(bbox, tuple):
+            x, y, w, h = bbox
+        else:
+            x, y, w, h = bbox.x, bbox.y, bbox.width, bbox.height
 
-    if min_x == float("inf"):
+        found = True
+        min_x = min(min_x, x)
+        min_y = min(min_y, y)
+        max_x = max(max_x, x + w)
+        max_y = max(max_y, y + h)
+
+    if not found:
         print(f"Skip (no shapes): {input_path}")
         return
 
