@@ -1,19 +1,13 @@
 import sys
 import os
-from svgelements import SVG, Rect
-from xml.dom import minidom
+from svgpathtools import svg2paths2
+from lxml import etree
 
 MARGIN = 5
 
-def iter_all_elements(svg):
-    for e in svg:
-        yield e
-        if hasattr(e, "__iter__"):
-            for child in iter_all_elements(e):
-                yield child
-
-def process_svg(input_path, output_path, fill_color="#000000"):
-    svg = SVG.parse(input_path)
+def process_svg(input_path, output_path, fill_color="#ffffff"):
+    # svgpathtools でパスと属性を取得
+    paths, attributes, svg_attr = svg2paths2(input_path)
 
     min_x = float("inf")
     min_y = float("inf")
@@ -22,55 +16,51 @@ def process_svg(input_path, output_path, fill_color="#000000"):
 
     found = False
 
-    for e in iter_all_elements(svg):
-        try:
-            bbox = e.bbox()
-        except Exception:
-            continue
-
-        if bbox is None:
-            continue
-
-        if isinstance(bbox, tuple):
-            x, y, w, h = bbox
-        else:
-            x, y, w, h = bbox.x, bbox.y, bbox.width, bbox.height
+    # すべての path の bbox を取得
+    for p in paths:
+        xmin, xmax, ymin, ymax = p.bbox()
 
         found = True
-        min_x = min(min_x, x)
-        min_y = min(min_y, y)
-        max_x = max(max_x, x + w)
-        max_y = max(max_y, y + h)
+        min_x = min(min_x, xmin)
+        min_y = min(min_y, ymin)
+        max_x = max(max_x, xmax)
+        max_y = max(max_y, ymax)
 
     if not found:
         print(f"Skip (no shapes): {input_path}")
         return
 
+    # rect の位置とサイズ
     inner_x = min_x + MARGIN
     inner_y = min_y + MARGIN
     inner_width = (max_x - min_x) - 2 * MARGIN
     inner_height = (max_y - min_y) - 2 * MARGIN
 
-    rect = Rect(
-        x=inner_x,
-        y=inner_y,
-        width=inner_width,
-        height=inner_height,
+    # lxml で元 SVG を読み込む
+    parser = etree.XMLParser(remove_blank_text=False)
+    tree = etree.parse(input_path, parser)
+    root = tree.getroot()
+
+    # rect 要素を作成
+    rect = etree.Element("rect")
+    rect.set("x", str(inner_x))
+    rect.set("y", str(inner_y))
+    rect.set("width", str(inner_width))
+    rect.set("height", str(inner_height))
+    rect.set("stroke", fill_color)
+    rect.set("stroke-width", "5")
+    rect.set("fill", fill_color)
+
+    # rect を root の末尾に追加（svg-parser-2 と同じ）
+    root.append(rect)
+
+    # 保存（整形して書き出し）
+    tree.write(
+        output_path,
+        pretty_print=True,
+        xml_declaration=True,
+        encoding="utf-8"
     )
-    rect.stroke = fill_color
-    rect.stroke_width = 5
-    rect.fill = fill_color
-
-    svg.append(rect)
-
-    # -----------------------------
-    # minidom で XML として書き出す
-    # -----------------------------
-    raw = svg.xml()  # svgelements が内部的に持つ XML 文字列
-    pretty = minidom.parseString(raw).toprettyxml(indent="  ")
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(pretty)
 
     print(f"Processed: {input_path} → {output_path}")
 
