@@ -4,7 +4,20 @@ from svgelements import SVG, Rect
 
 MARGIN = 5
 
-def process_svg(input_path, output_path, fill_color="#000000"):
+# -----------------------------
+# すべての子要素を再帰的に取得
+# -----------------------------
+def iter_all_elements(svg):
+    for e in svg:
+        yield e
+        if hasattr(e, "__iter__"):
+            for child in iter_all_elements(e):
+                yield child
+
+# -----------------------------
+# SVG 1ファイル処理
+# -----------------------------
+def process_svg(input_path, output_path, fill_color="#ffffff"):
     svg = SVG.parse(input_path)
 
     min_x = float("inf")
@@ -23,8 +36,7 @@ def process_svg(input_path, output_path, fill_color="#000000"):
         if bbox is None:
             continue
 
-        # svgelements 旧版: bbox is Rect
-        # svgelements 新版: bbox is tuple (x, y, width, height)
+        # Rect または tuple の両対応
         if isinstance(bbox, tuple):
             x, y, w, h = bbox
         else:
@@ -62,7 +74,9 @@ def process_svg(input_path, output_path, fill_color="#000000"):
 
     print(f"Processed: {input_path} → {output_path}")
 
-
+# -----------------------------
+# メイン処理（ディレクトリ一括）
+# -----------------------------
 if __name__ == "__main__":
     input_dir = sys.argv[1]
     output_dir = sys.argv[2]
