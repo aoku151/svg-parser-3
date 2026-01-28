@@ -13,6 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug input directory
+        run: |
+          echo "=== input directory ==="
+          ls -R input || true
+
       - name: Extract ZIP from Issue
         run: |
           mkdir input
@@ -20,7 +25,10 @@ jobs:
           echo "${{ github.event.issue.body }}"
 
           # 添付ファイル URL を抽出
-          ZIP_URL=$(echo "${{ github.event.issue.body }}" | grep -o 'https://github.com/[^ )]*')
+          ZIP_URL=$(echo "${{ github.event.issue.body }}" \
+            | grep -oE 'https://github.com/[^ )]+' \
+            | grep -i '\.zip' \
+            | head -n 1)
           echo "ZIP URL: $ZIP_URL"
 
           if [ -z "$ZIP_URL" ]; then
