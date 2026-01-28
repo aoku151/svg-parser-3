@@ -1,0 +1,65 @@
+import sys
+import os
+from svgelements import SVG, Rect
+
+MARGIN = 5
+
+def process_svg(input_path, output_path, fill_color="#000000"):
+    svg = SVG.parse(input_path)
+
+    min_x = float("inf")
+    min_y = float("inf")
+    max_x = float("-inf")
+    max_y = float("-inf")
+
+    for e in svg.elements():
+        try:
+            bbox = e.bbox()
+        except Exception:
+            continue
+        if bbox is None:
+            continue
+
+        min_x = min(min_x, bbox.x)
+        min_y = min(min_y, bbox.y)
+        max_x = max(max_x, bbox.x + bbox.width)
+        max_y = max(max_y, bbox.y + bbox.height)
+
+    if min_x == float("inf"):
+        print(f"Skip (no shapes): {input_path}")
+        return
+
+    inner_x = min_x + MARGIN
+    inner_y = min_y + MARGIN
+    inner_width = (max_x - min_x) - 2 * MARGIN
+    inner_height = (max_y - min_y) - 2 * MARGIN
+
+    rect = Rect(
+        x=inner_x,
+        y=inner_y,
+        width=inner_width,
+        height=inner_height,
+    )
+    rect.stroke = fill_color
+    rect.stroke_width = 5
+    rect.fill = fill_color
+
+    svg.append(rect)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(svg.tostring())
+
+    print(f"Processed: {input_path} → {output_path}")
+
+
+if __name__ == "__main__":
+    input_dir = sys.argv[1]
+    output_dir = sys.argv[2]
+    os.makedirs(output_dir, exist_ok=True)
+
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith(".svg"):
+                inp = os.path.join(root, file)
+                out = os.path.join(output_dir, file)
+                process_svg(inp, out)
