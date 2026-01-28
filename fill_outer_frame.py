@@ -1,5 +1,6 @@
 import sys
 import os
+import xml.etree.ElementTree as ET
 from svgelements import SVG, Rect
 
 MARGIN = 5
@@ -17,7 +18,7 @@ def iter_all_elements(svg):
 # -----------------------------
 # SVG 1ファイル処理
 # -----------------------------
-def process_svg(input_path, output_path, fill_color="#ffffff"):
+def process_svg(input_path, output_path, fill_color="#000000"):
     svg = SVG.parse(input_path)
 
     min_x = float("inf")
@@ -69,8 +70,11 @@ def process_svg(input_path, output_path, fill_color="#ffffff"):
 
     svg.append(rect)
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(str(svg))
+    # -----------------------------
+    # XML として安全に書き出す
+    # -----------------------------
+    tree = ET.ElementTree(svg)
+    tree.write(output_path, encoding="utf-8", xml_declaration=True)
 
     print(f"Processed: {input_path} → {output_path}")
 
