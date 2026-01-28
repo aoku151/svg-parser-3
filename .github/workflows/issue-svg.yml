@@ -13,12 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download attachments
-        uses: actions/download-artifact@v4
-        if: false
-        # ↑ GitHub Issues の添付ファイルは artifact ではないので無効化
-        #   下の curl で直接取得する
-
       - name: Extract ZIP from Issue
         run: |
           mkdir input
