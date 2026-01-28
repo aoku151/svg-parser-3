@@ -70,7 +70,7 @@ def process_svg(input_path, output_path, fill_color="#ffffff"):
     svg.append(rect)
 
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(svg.tostring())
+        f.write(str(svg))
 
     print(f"Processed: {input_path} → {output_path}")
 
