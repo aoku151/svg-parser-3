@@ -1,13 +1,10 @@
 import sys
 import os
-import xml.etree.ElementTree as ET
 from svgelements import SVG, Rect
+from xml.dom import minidom
 
 MARGIN = 5
 
-# -----------------------------
-# すべての子要素を再帰的に取得
-# -----------------------------
 def iter_all_elements(svg):
     for e in svg:
         yield e
@@ -15,9 +12,6 @@ def iter_all_elements(svg):
             for child in iter_all_elements(e):
                 yield child
 
-# -----------------------------
-# SVG 1ファイル処理
-# -----------------------------
 def process_svg(input_path, output_path, fill_color="#000000"):
     svg = SVG.parse(input_path)
 
@@ -37,7 +31,6 @@ def process_svg(input_path, output_path, fill_color="#000000"):
         if bbox is None:
             continue
 
-        # Rect または tuple の両対応
         if isinstance(bbox, tuple):
             x, y, w, h = bbox
         else:
@@ -71,16 +64,17 @@ def process_svg(input_path, output_path, fill_color="#000000"):
     svg.append(rect)
 
     # -----------------------------
-    # XML として安全に書き出す
+    # minidom で XML として書き出す
     # -----------------------------
-    tree = ET.ElementTree(svg)
-    tree.write(output_path, encoding="utf-8", xml_declaration=True)
+    raw = svg.xml()  # svgelements が内部的に持つ XML 文字列
+    pretty = minidom.parseString(raw).toprettyxml(indent="  ")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(pretty)
 
     print(f"Processed: {input_path} → {output_path}")
 
-# -----------------------------
-# メイン処理（ディレクトリ一括）
-# -----------------------------
+
 if __name__ == "__main__":
     input_dir = sys.argv[1]
     output_dir = sys.argv[2]
