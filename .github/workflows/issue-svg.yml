@@ -47,7 +47,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install svgelements
+        run: pip install svgpathtools lxml
 
       - name: Run batch SVG processing
         run: |
