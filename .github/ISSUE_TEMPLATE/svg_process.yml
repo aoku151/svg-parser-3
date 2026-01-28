@@ -1,0 +1,17 @@
+name: "SVG Batch Processing"
+description: "ZIP を添付すると GitHub Actions が SVG を一括処理します"
+title: "SVG Batch Request"
+labels: ["svg-process"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ZIP を添付してください。  
+        ZIP 内の SVG をすべて処理します。
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 任意メモ
+      description: 補足があれば書いてください
