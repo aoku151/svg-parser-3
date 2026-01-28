@@ -1,0 +1,60 @@
+name: Process SVG from Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  process:
+    if: contains(github.event.issue.labels.*.name, 'svg-process')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download attachments
+        uses: actions/download-artifact@v4
+        if: false
+        # ↑ GitHub Issues の添付ファイルは artifact ではないので無効化
+        #   下の curl で直接取得する
+
+      - name: Extract ZIP from Issue
+        run: |
+          mkdir input
+          echo "Issue body:"
+          echo "${{ github.event.issue.body }}"
+
+          # 添付ファイル URL を抽出
+          ZIP_URL=$(echo "${{ github.event.issue.body }}" | grep -o 'https://github.com/[^ )]*')
+          echo "ZIP URL: $ZIP_URL"
+
+          if [ -z "$ZIP_URL" ]; then
+            echo "ZIP が見つかりません"
+            exit 1
+          fi
+
+          # ダウンロード
+          curl -L "$ZIP_URL" -o input/data.zip
+
+          # 展開
+          unzip input/data.zip -d input/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install svgelements
+
+      - name: Run batch SVG processing
+        run: |
+          mkdir out
+          python fill_outer_frame.py input out
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-svgs
+          path: out/
